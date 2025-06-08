@@ -4,66 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8602cc885e690a8ca082398050ada1c6",
+    "content-hash": "8983c3024b582e34732a52689017acc3",
     "packages": [
-        {
-            "name": "jbboehr/phpstan-array-merge",
-            "version": "v0.1.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/jbboehr/phpstan-array-merge.git",
-                "reference": "b38be0dc6cc04857661775a05d2efe99c9ecf355"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/jbboehr/phpstan-array-merge/zipball/b38be0dc6cc04857661775a05d2efe99c9ecf355",
-                "reference": "b38be0dc6cc04857661775a05d2efe99c9ecf355",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1",
-                "phpstan/phpstan": "^1.12 || ^2.0"
-            },
-            "require-dev": {
-                "brick/varexporter": "*",
-                "composer-runtime-api": "*",
-                "phpstan/phpstan-phpunit": "^1.4.2 || ^2.0.6",
-                "phpstan/phpstan-strict-rules": "^1.6.2 || ^2.0.4",
-                "phpunit/phpunit": "^9.6 || ^10.5 || ^11.5",
-                "slevomat/coding-standard": "^8.18",
-                "squizlabs/php_codesniffer": "^3.13",
-                "symfony/var-dumper": "*"
-            },
-            "type": "phpstan-extension",
-            "extra": {
-                "phpstan": {
-                    "includes": [
-                        "extension.neon"
-                    ]
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "jbboehr\\PHPStan\\ArrayMerge\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "AGPL-3.0+"
-            ],
-            "authors": [
-                {
-                    "name": "John Boehr",
-                    "email": "jbboehr@gmail.com"
-                }
-            ],
-            "homepage": "https://github.com/jbboehr/phpstan-array-merge",
-            "support": {
-                "issues": "https://github.com/jbboehr/phpstan-array-merge/issues",
-                "source": "https://github.com/jbboehr/phpstan-array-merge/tree/v0.1.0"
-            },
-            "time": "2025-06-07T20:36:10+00:00"
-        },
         {
             "name": "phpstan/phpstan",
             "version": "1.12.27",

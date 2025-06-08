@@ -12,7 +12,6 @@
     ],
     "require": {
         "php": "^8.1",
-        "jbboehr/phpstan-array-merge": "*",
         "phpstan/phpstan": "^1.12 || ^2.0"
     },
     "autoload": {
