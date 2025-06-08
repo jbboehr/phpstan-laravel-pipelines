@@ -20,6 +20,7 @@ declare(strict_types=1);
 namespace jbboehr\PHPStan\Laravel\Pipeline;
 
 use PHPStan\Analyser\Scope;
+use PHPStan\Reflection\ParametersAcceptor;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -36,11 +37,16 @@ final class PipelineAnalyzer
         ConstantArrayType $pipelineType,
         string $methodName,
         Type $passableType,
+        Type $returnType,
         Scope $scope,
     ): array {
         $errors = [];
+        /** @var array<int, ParametersAcceptor> $selectors */
+        $selectors = [];
+        $returnTypes = [];
+        $valueTypes = $pipelineType->getValueTypes();
 
-        foreach ($pipelineType->getValueTypes() as $valueType) {
+        foreach ($valueTypes as $index => $valueType) {
             if ($valueType->isCallable()->yes()) {
                 $selector = ParametersAcceptorSelector::selectFromTypes(
                     [$passableType],
@@ -77,7 +83,7 @@ final class PipelineAnalyzer
             }
 
             if (
-                count($selector->getParameters()) !== 1 ||
+                count($selector->getParameters()) !== 2 ||
                 !$selector->getParameters()[0]->getType()->accepts($passableType, true)->yes()
             ) {
                 $errors[] = RuleErrorBuilder::message(sprintf(
@@ -88,6 +94,24 @@ final class PipelineAnalyzer
                     ->identifier('laravelPipelines.invalidParameter')
                     ->build();
             }
+
+            $selectors[$index] = $selector;
+        }
+
+        foreach (array_reverse(array_keys($selectors)) as $index) {
+            $selector = $selectors[$index];
+
+            if (!$selector->getReturnType()->accepts($returnType, true)->yes()) {
+                $errors[] = RuleErrorBuilder::message(sprintf(
+                    "%s does not accept as return type %s",
+                    $selector->getReturnType()->describe(VerbosityLevel::precise()),
+                    $returnType->describe(VerbosityLevel::precise()),
+                ))
+                    ->identifier('laravelPipelines.invalidReturnType')
+                    ->build();
+            }
+
+            $returnType = $selector->getReturnType();
         }
 
         return $errors;

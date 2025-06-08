@@ -73,6 +73,7 @@ final class PipelineThenRule implements Rule
             $pipelineType = $genericTypes[0];
             $methodType = $genericTypes[1];
             $passableType = $genericTypes[2];
+            $returnType = $genericTypes[3];
 
             if (
                 !$pipelineType->isConstantArray()->yes() ||
@@ -92,7 +93,7 @@ final class PipelineThenRule implements Rule
             $methodType = $methodType->getConstantStrings()[0];
             $methodName = $methodType->getValue();
 
-            return $this->pipelineAnalyzer->analyzePipeline($pipelineType, $methodName, $passableType, $scope);
+            return $this->pipelineAnalyzer->analyzePipeline($pipelineType, $methodName, $passableType, $returnType, $scope);
         } catch (\Throwable $e) {
             ShouldNotHappenException::rethrow($e);
         }

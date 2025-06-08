@@ -26,6 +26,7 @@ final class StubFilesExtension implements \PHPStan\PhpDoc\StubFilesExtension
         return [
             __DIR__ . '/../stubs/Contracts/Pipeline.stub',
             __DIR__ . '/../stubs/Pipeline/Pipeline.stub',
+            __DIR__ . '/../stubs/Routing/Pipeline.stub',
         ];
     }
 }

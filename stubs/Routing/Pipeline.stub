@@ -1,0 +1,15 @@
+<?php
+
+namespace Illuminate\Routing;
+
+use Illuminate\Pipeline\Pipeline as BasePipeline;
+
+/**
+ * @template P of list<callable|object>
+ * @template V of mixed
+ * @template R of mixed
+ * @extends BasePipeline<P, 'handle', V, R>
+ */
+class Pipeline extends BasePipeline
+{
+}

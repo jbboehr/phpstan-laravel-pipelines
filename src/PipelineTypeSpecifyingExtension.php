@@ -73,7 +73,8 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
                 "via",
                 "through",
                 "send",
-                "pipe" => true,
+                "pipe",
+                "then" => true,
                 default => false,
             }
         );
@@ -89,6 +90,9 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
             $args = $node->getArgs();
 
             if (count($args) !== 1) {
+                if ($methodReflection->getName() === "then") {
+                    dd(__LINE__);
+                }
                 return new SpecifiedTypes();
             }
 
@@ -110,6 +114,7 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
                 "pipe" => $this->specifyTypesForThrough($node, $scope, $varType, $argType, true),
                 "via" => $this->specifyTypesForVia($node, $scope, $varType, $argType),
                 "send" => $this->specifyTypesForSend($node, $scope, $varType, $argType),
+                "then" => $this->specifyTypesForThen($node, $scope, $varType, $argType),
                 default => new SpecifiedTypes(),
             };
         } catch (\Throwable $e) {
@@ -203,6 +208,39 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
                 ...array_slice($varType->getTypes(), 0, 2),
                 $argType,
                 ...array_slice($varType->getTypes(), 3),
+            ],
+            null,
+            $varType->getClassReflection(),
+            $varType->getVariances(),
+        );
+
+        return $this->typeSpecifier->create($node->var, $newType, TypeSpecifierContext::createTruthy(), true, $scope);
+    }
+
+    public function specifyTypesForThen(
+        MethodCall $node,
+        Scope $scope,
+        GenericObjectType $varType,
+        Type $argType,
+    ): SpecifiedTypes {
+        if (!$argType->isCallable()->yes()) {
+            return new SpecifiedTypes();
+        }
+
+        $acceptor = $argType->getCallableParametersAcceptors($scope)[0] ?? null;
+
+        if (null === $acceptor) {
+            return new SpecifiedTypes();
+        }
+
+        $returnType = $acceptor->getReturnType();
+
+        $newType = new GenericObjectType(
+            $varType->getClassName(),
+            [
+                ...array_slice($varType->getTypes(), 0, 3),
+                $returnType,
+                ...array_slice($varType->getTypes(), 5),
             ],
             null,
             $varType->getClassReflection(),

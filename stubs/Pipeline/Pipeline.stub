@@ -8,7 +8,8 @@ use Illuminate\Contracts\Pipeline\Pipeline as PipelineContract;
  * @template P of list<callable|object>
  * @template M of string
  * @template V of mixed
- * @implements PipelineContract<P, M, V>
+ * @template R of mixed
+ * @implements PipelineContract<P, M, V, R>
  */
 class Pipeline implements PipelineContract
 {

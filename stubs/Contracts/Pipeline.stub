@@ -8,6 +8,7 @@ use Closure;
  * @template P of list<callable|object>
  * @template M of string
  * @template V of mixed
+ * @template R of mixed
  */
 interface Pipeline
 {
