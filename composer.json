@@ -53,7 +53,10 @@
     "scripts": {
         "phpcs": "./vendor/bin/phpcs",
         "phpstan": "./vendor/bin/phpstan",
-        "phpunit": "./vendor/bin/phpunit"
+        "phpunit": "./vendor/bin/phpunit",
+        "switch-to-laravel": [
+            "composer require --no-update --dev laravel/framework:^@additional_args && composer upgrade -W"
+        ]
     },
     "_comment": [
         "Think not that I am come to send peace on earth: I came not to send peace, but a sword. Matthew 10:34"

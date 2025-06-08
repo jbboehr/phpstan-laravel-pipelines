@@ -29,7 +29,14 @@ final class PipelineTypeSpecifyingExtensionInferenceTest extends TypeInferenceTe
      */
     public static function dataFileProvider(): \Generator
     {
-        yield [__DIR__ . '/data/pipeline-inference.php'];
+        $phpstanVersion = \Composer\InstalledVersions::getVersion('phpstan/phpstan');
+        self::assertNotNull($phpstanVersion);
+
+        if (version_compare($phpstanVersion, '2.0', '>=')) {
+            yield [__DIR__ . '/data/pipeline-inference-phpstan2.php'];
+        } else {
+            yield [__DIR__ . '/data/pipeline-inference.php'];
+        }
     }
 
     /**

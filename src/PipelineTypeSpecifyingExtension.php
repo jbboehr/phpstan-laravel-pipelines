@@ -40,7 +40,7 @@ use PHPStan\Type\TypeCombinator;
 
 final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtension, MethodTypeSpecifyingExtension
 {
-    private TypeSpecifier $typeSpecifier;
+    private TypeSpecifierProxy $typeSpecifier;
 
     private Type $emptyListType;
 
@@ -48,14 +48,13 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
     {
         $this->emptyListType = TypeCombinator::intersect(
             new ArrayType(IntegerRangeType::fromInterval(0, null), new ObjectWithoutClassType()),
-            /** @phpstan-ignore-next-line phpstanApi.constructor */
             new AccessoryArrayListType(),
         );
     }
 
     public function setTypeSpecifier(TypeSpecifier $typeSpecifier): void
     {
-        $this->typeSpecifier = $typeSpecifier;
+        $this->typeSpecifier = new TypeSpecifierProxy($typeSpecifier);
     }
 
     public function getClass(): string
