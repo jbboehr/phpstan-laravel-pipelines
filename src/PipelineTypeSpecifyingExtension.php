@@ -86,32 +86,36 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
         Scope $scope,
         TypeSpecifierContext $context,
     ): SpecifiedTypes {
-        $args = $node->getArgs();
+        try {
+            $args = $node->getArgs();
 
-        if (count($args) !== 1) {
-            return new SpecifiedTypes();
+            if (count($args) !== 1) {
+                return new SpecifiedTypes();
+            }
+
+            $varType = $scope->getType($node->var);
+
+            /** @phpstan-ignore-next-line phpstanApi.instanceofType */
+            if (!($varType instanceof GenericObjectType)) {
+                return new SpecifiedTypes();
+            }
+
+            if (count($varType->getTypes()) < 1) {
+                return new SpecifiedTypes();
+            }
+
+            $argType = $scope->getType($node->getArgs()[0]->value);
+
+            return match ($methodReflection->getName()) {
+                "through" => $this->specifyTypesForThrough($node, $scope, $varType, $argType, false),
+                "pipe" => $this->specifyTypesForThrough($node, $scope, $varType, $argType, true),
+                "via" => $this->specifyTypesForVia($node, $scope, $varType, $argType),
+                "send" => $this->specifyTypesForSend($node, $scope, $varType, $argType),
+                default => new SpecifiedTypes(),
+            };
+        } catch (\Throwable $e) {
+            ShouldNotHappenException::rethrow($e);
         }
-
-        $varType = $scope->getType($node->var);
-
-        /** @phpstan-ignore-next-line phpstanApi.instanceofType */
-        if (!($varType instanceof GenericObjectType)) {
-            return new SpecifiedTypes();
-        }
-
-        if (count($varType->getTypes()) < 1) {
-            return new SpecifiedTypes();
-        }
-
-        $argType = $scope->getType($node->getArgs()[0]->value);
-
-        return match ($methodReflection->getName()) {
-            "through" => $this->specifyTypesForThrough($node, $scope, $varType, $argType, false),
-            "pipe" => $this->specifyTypesForThrough($node, $scope, $varType, $argType, true),
-            "via" => $this->specifyTypesForVia($node, $scope, $varType, $argType),
-            "send" => $this->specifyTypesForSend($node, $scope, $varType, $argType),
-            default => new SpecifiedTypes(),
-        };
     }
 
     public function specifyTypesForThrough(
@@ -122,6 +126,16 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
         bool $replace,
     ): SpecifiedTypes {
         $genericType = $varType->getTypes()[0];
+
+        if (!$argType->isConstantArray()->yes()) {
+            $builder = ConstantArrayTypeBuilder::createEmpty();
+            $builder->setOffsetValueType(new ConstantIntegerType(0), $argType);
+            $argType = $builder->getArray();
+        }
+
+        if (count($argType->getConstantArrays()) !== 1) {
+            return new SpecifiedTypes();
+        }
 
         if ($replace || $genericType->accepts($this->emptyListType, true)->yes()) {
             $newType = new GenericObjectType(
@@ -136,10 +150,6 @@ final class PipelineTypeSpecifyingExtension implements TypeSpecifierAwareExtensi
         }
 
         if (!$genericType->isConstantArray()->yes() || count($genericType->getConstantArrays()) !== 1) {
-            return new SpecifiedTypes();
-        }
-
-        if (!$argType->isConstantArray()->yes() || count($argType->getConstantArrays()) !== 1) {
             return new SpecifiedTypes();
         }
 

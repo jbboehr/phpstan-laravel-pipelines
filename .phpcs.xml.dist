@@ -37,6 +37,7 @@
     </rule>
 
     <rule ref="Generic.Files.LineLength">
+        <exclude-pattern>*/tests/data/*</exclude-pattern>
         <exclude-pattern>*/tests/fixtures/*</exclude-pattern>
     </rule>
 

@@ -48,99 +48,103 @@ final class PipelineThenRule implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!($node->name instanceof Node\Identifier) || $node->name->name !== 'then') {
-            return [];
-        }
+        try {
+            if (!($node->name instanceof Node\Identifier) || $node->name->name !== 'then') {
+                return [];
+            }
 
-        $varType = $scope->getType($node->var);
+            $varType = $scope->getType($node->var);
 
-        if (
-            /** @phpstan-ignore-next-line phpstanApi.instanceofType */
-            !$varType instanceof GenericObjectType ||
-            !$this->pipelineObjectType->accepts($varType, true)->yes()
-        ) {
-            return [];
-        }
+            if (
+                /** @phpstan-ignore-next-line phpstanApi.instanceofType */
+                !$varType instanceof GenericObjectType ||
+                !$this->pipelineObjectType->accepts($varType, true)->yes()
+            ) {
+                return [];
+            }
 
-        $genericTypes = $varType->getTypes();
+            $genericTypes = $varType->getTypes();
 
-        if (count($genericTypes) < 3) {
-            return [];
-        }
+            if (count($genericTypes) < 3) {
+                return [];
+            }
 
-        $errors = [];
-        $pipelineType = $genericTypes[0];
-        $methodType = $genericTypes[1];
-        $passableType = $genericTypes[2];
+            $errors = [];
+            $pipelineType = $genericTypes[0];
+            $methodType = $genericTypes[1];
+            $passableType = $genericTypes[2];
 
-        if (
-            !$pipelineType->isConstantArray()->yes() ||
-            count($pipelineType->getConstantArrays()) !== 1 ||
-            !$methodType->isConstantScalarValue()->yes() ||
-            count($methodType->getConstantStrings()) !== 1 ||
-            !$pipelineType->getConstantArrays()[0]->isList()->yes()
-        ) {
-            $errors[] = RuleErrorBuilder::message('Unconfigured pipeline: ' . $varType->describe(VerbosityLevel::precise()))
-                ->identifier('laravelPipelines.unconfigured')
-                ->build();
+            if (
+                !$pipelineType->isConstantArray()->yes() ||
+                count($pipelineType->getConstantArrays()) !== 1 ||
+                !$methodType->isConstantScalarValue()->yes() ||
+                count($methodType->getConstantStrings()) !== 1 ||
+                !$pipelineType->getConstantArrays()[0]->isList()->yes()
+            ) {
+                $errors[] = RuleErrorBuilder::message('Unconfigured pipeline: ' . $varType->describe(VerbosityLevel::precise()))
+                    ->identifier('laravelPipelines.unconfigured')
+                    ->build();
 
-            return $errors;
-        }
+                return $errors;
+            }
 
-        $pipelineType = $pipelineType->getConstantArrays()[0];
-        $methodType = $methodType->getConstantStrings()[0];
-        $methodName = $methodType->getValue();
+            $pipelineType = $pipelineType->getConstantArrays()[0];
+            $methodType = $methodType->getConstantStrings()[0];
+            $methodName = $methodType->getValue();
 
-        foreach ($pipelineType->getValueTypes() as $valueType) {
-            if ($valueType->isCallable()->yes()) {
-                $selector = ParametersAcceptorSelector::selectFromTypes(
-                    [$passableType],
-                    $valueType->getCallableParametersAcceptors($scope),
-                    true,
-                );
+            foreach ($pipelineType->getValueTypes() as $valueType) {
+                if ($valueType->isCallable()->yes()) {
+                    $selector = ParametersAcceptorSelector::selectFromTypes(
+                        [$passableType],
+                        $valueType->getCallableParametersAcceptors($scope),
+                        true,
+                    );
 
-                $callableName = $valueType->describe(VerbosityLevel::precise());
-            } elseif ($valueType->isObject()->yes()) {
-                if (!$valueType->hasMethod($methodName)->yes()) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(
-                        'Pipeline item %s does not have method %s',
-                        $valueType->describe(VerbosityLevel::typeOnly()),
-                        $methodName,
-                    ))
-                        ->identifier('laravelPipelines.missingMethod')
-                        ->build();
+                    $callableName = $valueType->describe(VerbosityLevel::precise());
+                } elseif ($valueType->isObject()->yes()) {
+                    if (!$valueType->hasMethod($methodName)->yes()) {
+                        $errors[] = RuleErrorBuilder::message(sprintf(
+                            'Pipeline item %s does not have method %s',
+                            $valueType->describe(VerbosityLevel::typeOnly()),
+                            $methodName,
+                        ))
+                            ->identifier('laravelPipelines.missingMethod')
+                            ->build();
+                        continue;
+                    }
+
+                    $methodReflection = $valueType->getMethod($methodName, $scope);
+                    $variants = $methodReflection->getVariants();
+
+                    $selector = ParametersAcceptorSelector::selectFromTypes(
+                        [
+                            $passableType,
+                        ],
+                        $variants,
+                        true,
+                    );
+                    $callableName = $methodReflection->getDeclaringClass()->getName() . '::' . $methodReflection->getName() . '()';
+                } else {
                     continue;
                 }
 
-                $methodReflection = $valueType->getMethod($methodName, $scope);
-                $variants = $methodReflection->getVariants();
-
-                $selector = ParametersAcceptorSelector::selectFromTypes(
-                    [
-                        $passableType,
-                    ],
-                    $variants,
-                    true,
-                );
-                $callableName = $methodReflection->getDeclaringClass()->getName() . '::' . $methodReflection->getName() . '()';
-            } else {
-                continue;
+                if (
+                    count($selector->getParameters()) !== 1 ||
+                    !$selector->getParameters()[0]->getType()->accepts($passableType, true)->yes()
+                ) {
+                    $errors[] = RuleErrorBuilder::message(sprintf(
+                        "%s does not accept as passable: %s",
+                        $callableName,
+                        $passableType->describe(VerbosityLevel::typeOnly()),
+                    ))
+                        ->identifier('laravelPipelines.invalidParameter')
+                        ->build();
+                }
             }
 
-            if (
-                count($selector->getParameters()) !== 1 ||
-                !$selector->getParameters()[0]->getType()->accepts($passableType, true)->yes()
-            ) {
-                $errors[] = RuleErrorBuilder::message(sprintf(
-                    "%s does not accept as passable: %s",
-                    $callableName,
-                    $passableType->describe(VerbosityLevel::typeOnly()),
-                ))
-                    ->identifier('laravelPipelines.invalidParameter')
-                    ->build();
-            }
+            return $errors;
+        } catch (\Throwable $e) {
+            ShouldNotHappenException::rethrow($e);
         }
-
-        return $errors;
     }
 }
