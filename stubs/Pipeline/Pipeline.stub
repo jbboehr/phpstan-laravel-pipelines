@@ -1,0 +1,38 @@
+<?php
+
+namespace Illuminate\Pipeline;
+
+use Illuminate\Contracts\Pipeline\Pipeline as PipelineContract;
+
+/**
+ * @template P of list<callable|object>
+ * @template M of string
+ * @template V of mixed
+ * @implements PipelineContract<P, M, V>
+ */
+class Pipeline implements PipelineContract
+{
+    /**
+     * @param callable|object|list<callable|object> $pipes
+     * @return $this
+     */
+    public function through($pipes);
+
+    /**
+     * @param callable|object|list<callable|object> $pipes
+     * @return $this
+     */
+    public function pipe($pipes);
+
+    /**
+     * @param string $method
+     * @return $this
+     */
+    public function via($method);
+
+    /**
+     * @param mixed $passable
+     * @return $this
+     */
+    public function send($passable);
+}
