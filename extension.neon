@@ -3,6 +3,9 @@ rules:
   - jbboehr\PHPStan\Laravel\Pipeline\PipelineThenRule
 
 services:
+  - class: jbboehr\PHPStan\Laravel\Pipeline\PipelineAnalyzer
+  - class: jbboehr\PHPStan\Laravel\Pipeline\RouteCollector
+    tags: ["phpstan.collector"]
   - class: jbboehr\PHPStan\Laravel\Pipeline\StubFilesExtension
     tags: ["phpstan.stubFilesExtension"]
   - class: jbboehr\PHPStan\Laravel\Pipeline\PipelineTypeSpecifyingExtension

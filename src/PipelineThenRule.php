@@ -22,7 +22,6 @@ namespace jbboehr\PHPStan\Laravel\Pipeline;
 use Illuminate\Contracts\Pipeline\Pipeline;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
-use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\Generic\GenericObjectType;
@@ -36,8 +35,9 @@ final class PipelineThenRule implements Rule
 {
     private ObjectType $pipelineObjectType;
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly PipelineAnalyzer $pipelineAnalyzer,
+    ) {
         $this->pipelineObjectType = new ObjectType(Pipeline::class);
     }
 
@@ -92,57 +92,7 @@ final class PipelineThenRule implements Rule
             $methodType = $methodType->getConstantStrings()[0];
             $methodName = $methodType->getValue();
 
-            foreach ($pipelineType->getValueTypes() as $valueType) {
-                if ($valueType->isCallable()->yes()) {
-                    $selector = ParametersAcceptorSelector::selectFromTypes(
-                        [$passableType],
-                        $valueType->getCallableParametersAcceptors($scope),
-                        true,
-                    );
-
-                    $callableName = $valueType->describe(VerbosityLevel::precise());
-                } elseif ($valueType->isObject()->yes()) {
-                    if (!$valueType->hasMethod($methodName)->yes()) {
-                        $errors[] = RuleErrorBuilder::message(sprintf(
-                            'Pipeline item %s does not have method %s',
-                            $valueType->describe(VerbosityLevel::typeOnly()),
-                            $methodName,
-                        ))
-                            ->identifier('laravelPipelines.missingMethod')
-                            ->build();
-                        continue;
-                    }
-
-                    $methodReflection = $valueType->getMethod($methodName, $scope);
-                    $variants = $methodReflection->getVariants();
-
-                    $selector = ParametersAcceptorSelector::selectFromTypes(
-                        [
-                            $passableType,
-                        ],
-                        $variants,
-                        true,
-                    );
-                    $callableName = $methodReflection->getDeclaringClass()->getName() . '::' . $methodReflection->getName() . '()';
-                } else {
-                    continue;
-                }
-
-                if (
-                    count($selector->getParameters()) !== 1 ||
-                    !$selector->getParameters()[0]->getType()->accepts($passableType, true)->yes()
-                ) {
-                    $errors[] = RuleErrorBuilder::message(sprintf(
-                        "%s does not accept as passable: %s",
-                        $callableName,
-                        $passableType->describe(VerbosityLevel::typeOnly()),
-                    ))
-                        ->identifier('laravelPipelines.invalidParameter')
-                        ->build();
-                }
-            }
-
-            return $errors;
+            return $this->pipelineAnalyzer->analyzePipeline($pipelineType, $methodName, $passableType, $scope);
         } catch (\Throwable $e) {
             ShouldNotHappenException::rethrow($e);
         }
